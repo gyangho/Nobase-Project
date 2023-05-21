@@ -30,21 +30,36 @@ import com.skt.Tmap.TMapMarkerItem;
 import com.skt.Tmap.poi_item.TMapPOIItem;
 
 import java.util.ArrayList;
+import java.util.TreeSet;
 
 class EventPoint {
     private double latitude;
     private double longitude;
     private int type;
+    private String title;
+    private String subTitle;
+    private int id;
 
-    public EventPoint(double latitude, double longitude, int type) {
+    public EventPoint(double latitude, double longitude, int type, String title, String subTitle, int id) {
         this.latitude = latitude;
         this.longitude = longitude;
         this.type = type;
+        this.title = title;
+        this.subTitle = subTitle;
+        this.id = id;
     }
 
     public double getLatitude() { return latitude; }
     public double getLongitude() { return longitude; }
     public int getType() { return type; }
+    public String getTitle() { return title; }
+    public String getSubTitle() { return subTitle; }
+    public int getId() { return id; }
+    public boolean checkType(int check) { return (check & type) > 0; }
+}
+
+class EventConst {
+    public static final int IS_EVENT = 1;
 }
 
 public class MainActivity extends AppCompatActivity implements TMapGpsManager.onLocationChangedCallback, TMapView.OnClickListenerCallback {
@@ -65,6 +80,8 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
 
 
     private ArrayList<EventPoint> eventPoint = new ArrayList<>();
+    private ArrayList<EventPoint> alertPoint = new ArrayList<>();
+    private ArrayList<EventPoint> showPoint = new ArrayList<>();
 
     private Location lastLocation = null;
 
@@ -75,6 +92,11 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
     private int walk_id = 0;
 
     private static int notification_id = 0;
+    private boolean is_pointed = false;
+
+    private boolean show_event = true;
+    private boolean show_alert = true;
+    TreeSet<Integer> showing = new TreeSet<>();
 
     /*
     Markerlist - 클릭된 마커들
@@ -85,8 +107,8 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
     @Override
     public boolean onPressEvent(ArrayList<TMapMarkerItem> markerlist, ArrayList<TMapPOIItem> poilist, TMapPoint point, PointF pointf) {
         if(markerlist.size() > 0) {
-            TMapMarkerItem item = markerlist.get(0);
-            Toast.makeText(getApplicationContext(), "마커 클릭", Toast.LENGTH_LONG).show();
+            // TMapMarkerItem item = markerlist.get(0);
+            // Toast.makeText(getApplicationContext(), "마커 클릭", Toast.LENGTH_LONG).show();
             return false;
         }
         
@@ -113,11 +135,16 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
             tmapview.addTMapPolyLine("walk" + walk_id, tmapPolyLine);
         }
 
-        for(EventPoint point : eventPoint) {
+        
+        for(EventPoint point : showPoint) {
             double distance = Math.sqrt(Math.pow(point.getLatitude() - location.getLatitude(), 2) + Math.pow(point.getLongitude() - location.getLongitude(), 2));
-            if(distance < 0.0001) {
-                sendNotification(++notification_id, "이벤트 발생", "HI");
-//                Toast.makeText(getApplicationContext(), "이벤트 발생", Toast.LENGTH_LONG).show();
+            if(distance < 0.001) {
+                if(!showing.contains(point.getId())) {
+                    sendNotification(++notification_id, "이벤트 발생", point.getId() + "번 이벤트 발생");
+                    showing.add(point.getId());
+                }
+            } else if(showing.contains(point.getId())) {
+                showing.remove(point.getId());
             }
         }
     }
@@ -168,68 +195,61 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
         // TODO : walk_id = get_walk_id();
 
         // TODO : Event Point 가져오기
-        {
-            eventPoint.add(new EventPoint(37.4963, 126.9569, 0));
-            eventPoint.add(new EventPoint(37.4946, 126.9571, 1));
+        for(EventPoint point : new EventPoint[]{new EventPoint(37.4963, 126.9569, 0, "이벤트 1", "이벤트 1 설명입니다.", 1), new EventPoint(37.4946, 126.9571, 1, "이벤트 2", "이벤트 2 설명입니다.", 2)}) {
+            if(point.checkType(EventConst.IS_EVENT)) eventPoint.add(point);
+            else alertPoint.add(point);
         }
 
         // 입력으로 받은 event들을 화면에 보여준다.
-        for (int i=0; i<eventPoint.size(); i++) {
-            EventPoint point = eventPoint.get(i);
-            TMapMarkerItem tmarker = new TMapMarkerItem();
-            tmarker.setTMapPoint(new TMapPoint(point.getLatitude(), point.getLongitude()));
-            tmarker.setVisible(TMapMarkerItem.VISIBLE);
-            tmarker.setCanShowCallout(true);
-            tmarker.setCalloutTitle("이벤트");
-            tmarker.setCalloutSubTitle("이벤트 설명");
-            tmapview.addMarkerItem("event" + i, tmarker);
-        }
-
-        
+        togglePoint();
 
         // 산책을 시작하는 버튼과 종료하는 버튼
         start_walk_button = (Button) findViewById(R.id.start_walk_button);
         end_walk_button = (Button) findViewById(R.id.end_walk_button);
         end_walk_button.setVisibility(View.GONE);
 
-        start_walk_button.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                start_walk();
-            }
-        });
+        start_walk_button.setOnClickListener(v -> start_walk());
 
-        end_walk_button.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                onBackPressed();
-            }
-        });
+        end_walk_button.setOnClickListener(v -> onBackPressed());
 
         // 화면 중앙을 현재 위치로 이동시키는 버튼
         Button return_button = (Button) findViewById(R.id.return_button);
-        return_button.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                tmapview.setCenterPoint(lastLocation.getLongitude(), lastLocation.getLatitude());
-                tmapview.setTrackingMode(true);
-            }
+        return_button.setOnClickListener(v -> {
+            tmapview.setCenterPoint(lastLocation.getLongitude(), lastLocation.getLatitude());
+            tmapview.setTrackingMode(true);
         });
 
         // 디버깅용 화면 중앙으로 이동하는 버튼
         Button teleport_button = (Button) findViewById(R.id.teleport_button);
-        teleport_button.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                TMapPoint tpoint = tmapview.getCenterPoint();
-                onLocationChange(new Location ("teleport") {{
-                    setLatitude(tpoint.getLatitude());
-                    setLongitude(tpoint.getLongitude());
-                }});
-                tmapview.setCenterPoint(tpoint.getLongitude(), tpoint.getLatitude());
-            }
+        teleport_button.setOnClickListener(v -> {
+            TMapPoint tpoint = tmapview.getCenterPoint();
+            onLocationChange(new Location ("teleport") {{
+                setLatitude(tpoint.getLatitude());
+                setLongitude(tpoint.getLongitude());
+            }});
+            tmapview.setCenterPoint(tpoint.getLongitude(), tpoint.getLatitude());
         });
 
+        Button alert_view_button = (Button) findViewById(R.id.alert_view_button);
+        alert_view_button.setOnClickListener(v -> {
+            show_alert = !show_alert;
+            togglePoint();
+        });
+
+        Button event_view_button = (Button) findViewById(R.id.event_view_button);
+        event_view_button.setOnClickListener(v -> {
+            show_event = !show_event;
+            togglePoint();
+        });
+
+        Button report_button = (Button) findViewById(R.id.report_button);
+        report_button.setOnClickListener(v -> {
+            if(is_pointed) {
+
+            } else {
+                report(lastLocation);
+            }
+        });
 //        System.out.println(tmapgps.getProvider());
 
         createNotificationChannel();
@@ -280,6 +300,12 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
     // 뒤로가기 버튼을 눌렀을 떄 실행되는 함수
     @Override
     public void onBackPressed() {
+        if(is_pointed) {
+
+            is_pointed = false;
+            return;
+        }
+
         if (is_walking) { // 산책중이면 산책 종료버튼을 누른거랑 같은 작동을 함
             AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
             builder.setMessage("산책을 종료하시겠습니까?");
@@ -296,9 +322,10 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
                         }
                     });
             builder.show();
-        } else { // 산책중이 아니면 앱을 종료시킴
-            finish();
+            return;
         }
+        
+        finish();    
     }
 
     // 산책이 시작되었을 때 실행되는 함수
@@ -324,5 +351,27 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
         // TODO : 팝업 띄우기
         Intent intent = new Intent(this, WalkResultActivity.class);
         startActivity(intent);
+    }
+
+    public void togglePoint() {
+        tmapview.removeAllMarkerItem();
+
+        showPoint.clear();
+        if(show_event) showPoint.addAll(eventPoint);
+        if(show_alert) showPoint.addAll(alertPoint);
+
+        for(EventPoint point : showPoint) {
+            TMapMarkerItem tmarker = new TMapMarkerItem();
+            tmarker.setTMapPoint(new TMapPoint(point.getLatitude(), point.getLongitude()));
+            tmarker.setVisible(TMapMarkerItem.VISIBLE);
+            tmarker.setCanShowCallout(true);
+            tmarker.setCalloutTitle(point.getTitle());
+            tmarker.setCalloutSubTitle(point.getSubTitle());
+            tmapview.addMarkerItem("event" + point.getId(), tmarker);
+        }
+    }
+
+    public void report(Location location) {
+        // TODO : POPUP 하나 더
     }
 }
