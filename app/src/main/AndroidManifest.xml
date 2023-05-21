@@ -29,7 +29,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".WalkResultActivity" />
+        <activity android:name=".WalkResultActivity" android:theme="@android:style/Theme.Dialog"/>
     </application>
 
 </manifest>

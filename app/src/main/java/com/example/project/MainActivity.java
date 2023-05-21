@@ -10,6 +10,7 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Intent;
 import android.graphics.Color;
+import android.graphics.PointF;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
@@ -26,6 +27,7 @@ import com.skt.Tmap.TMapView;
 import com.skt.Tmap.TMapPoint;
 import com.skt.Tmap.TMapPolyLine;
 import com.skt.Tmap.TMapMarkerItem;
+import com.skt.Tmap.poi_item.TMapPOIItem;
 
 import java.util.ArrayList;
 
@@ -45,7 +47,7 @@ class EventPoint {
     public int getType() { return type; }
 }
 
-public class MainActivity extends AppCompatActivity implements TMapGpsManager.onLocationChangedCallback {
+public class MainActivity extends AppCompatActivity implements TMapGpsManager.onLocationChangedCallback, TMapView.OnClickListenerCallback {
 
     private static final int MULTIPLE_PERMISSION = 10235;
     private final String[] PERMISSIONS = {
@@ -74,10 +76,36 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
 
     private static int notification_id = 0;
 
+    /*
+    Markerlist - 클릭된 마커들
+    Poilist - 클릭된 POI 들
+    Point - 화면좌표값을 위도, 경도로 반환한 값
+    Pointf - 화면좌표값
+     */
+    @Override
+    public boolean onPressEvent(ArrayList<TMapMarkerItem> markerlist, ArrayList<TMapPOIItem> poilist, TMapPoint point, PointF pointf) {
+        if(markerlist.size() > 0) {
+            TMapMarkerItem item = markerlist.get(0);
+            Toast.makeText(getApplicationContext(), "마커 클릭", Toast.LENGTH_LONG).show();
+            return false;
+        }
+        
+        // Toast.makeText(getApplicationContext(), "위도 : " + point.getLatitude() + "\n경도 : " + point.getLongitude(), Toast.LENGTH_LONG).show();
+        return false;
+    }
+
+    @Override
+    public boolean onPressUpEvent(ArrayList<TMapMarkerItem> arrayList, ArrayList<TMapPOIItem> arrayList1, TMapPoint tMapPoint, PointF pointF) {
+        return false;
+    }
+
     @Override
     public void onLocationChange(Location location) {
+        // int Satellite = tmapgps.getSatellite(); 위성 수
         // TODO : location = 보정(location);
         tmapview.setLocationPoint(location.getLongitude(), location.getLatitude());
+        // 이동시 위도 경도 출력
+        Toast.makeText(getApplicationContext(), "위도 : " + location.getLatitude() + "\n경도 : " + location.getLongitude(), Toast.LENGTH_LONG).show();
         lastLocation = location;
 
         if(is_walking) {
@@ -198,8 +226,11 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
                     setLatitude(tpoint.getLatitude());
                     setLongitude(tpoint.getLongitude());
                 }});
+                tmapview.setCenterPoint(tpoint.getLongitude(), tpoint.getLatitude());
             }
         });
+
+//        System.out.println(tmapgps.getProvider());
 
         createNotificationChannel();
     }
@@ -291,5 +322,7 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
         end_walk_button.setVisibility(View.GONE);
 
         // TODO : 팝업 띄우기
+        Intent intent = new Intent(this, WalkResultActivity.class);
+        startActivity(intent);
     }
 }
