@@ -6,9 +6,11 @@ import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
 
 import android.Manifest;
+import android.app.Activity;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.PointF;
 import android.os.Build;
@@ -98,6 +100,10 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
     private boolean show_alert = true;
     TreeSet<Integer> showing = new TreeSet<>();
 
+    private SharedPreferences sharedPreferences;
+    private Button login_button = null;
+    private String login_id = null;
+
     /*
     Markerlist - 클릭된 마커들
     Poilist - 클릭된 POI 들
@@ -153,6 +159,7 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        sharedPreferences = getSharedPreferences("sharedPreferences", Activity.MODE_PRIVATE);
 
         if(!hasPermissions(this, PERMISSIONS))
         {
@@ -250,9 +257,43 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
                 report(lastLocation);
             }
         });
-//        System.out.println(tmapgps.getProvider());
 
+        login_button = (Button) findViewById(R.id.login_button);
+        if(sharedPreferences.getBoolean("auto_login", false)) {
+            login_id = sharedPreferences.getString("id", "");
+            login_button.setText("로그아웃");
+        }
+
+        login_button.setOnClickListener(v -> {
+            if(login_id == null) {
+                Intent intent = new Intent(this, LoginActivity.class);
+                startActivityForResult(intent, 1);
+            } else {
+                SharedPreferences.Editor editor = sharedPreferences.edit();
+                editor.putBoolean("auto_login", false);
+                editor.commit();
+
+                login_id = null;
+                login_button.setText("로그인");
+                Toast.makeText(getApplicationContext(), "로그아웃 되었습니다.", Toast.LENGTH_SHORT).show();
+            }
+            
+        });
+
+//        System.out.println(tmapgps.getProvider());
         createNotificationChannel();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == 1) {
+            login_id = data.getStringExtra("id");
+            if(login_id == null) return;
+            login_button.setText("로그아웃");
+
+            Toast.makeText(getApplicationContext(), login_id + "님 로그인 되었습니다.", Toast.LENGTH_SHORT).show();
+        }
     }
 
     // 권한을 확인하는 함수
@@ -348,7 +389,6 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
         start_walk_button.setVisibility(View.VISIBLE);
         end_walk_button.setVisibility(View.GONE);
 
-        // TODO : 팝업 띄우기
         Intent intent = new Intent(this, WalkResultActivity.class);
         startActivity(intent);
     }

@@ -12,19 +12,18 @@ import android.content.DialogInterface;
 
 public class WalkResultActivity extends Activity {
     
-    
-   @Override
-   public void onBackPressed() {
-       finish();
-   }
+    @Override
+    public void onBackPressed() {
+        finish();
+    }
 
-   @Override
-   public boolean onTouchEvent(MotionEvent event) {
-       if( event.getAction() == MotionEvent.ACTION_OUTSIDE ) {
-           return false;
-       }
-       return true;
-   }
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        if( event.getAction() == MotionEvent.ACTION_OUTSIDE ) {
+            return false;
+        }
+        return true;
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
