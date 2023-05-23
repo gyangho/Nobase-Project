@@ -93,7 +93,6 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
 
     private int walk_id = 0;
 
-    private static int notification_id = 100000;
     private boolean is_pointed = false;
 
     private boolean show_event = true;
@@ -329,8 +328,11 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
         }
     }
 
+    private static int notification_id = 10000000;
     // 알림 id, 제목, 내용으로 핸드폰에 알림을 보내는 함수. 이전과 같은 알림 id로 보내면 덮어씌워진다.
+    // 알림 id가 -1로 들어가면 새로운 알림 id로 채워준다.
     public void sendNotification(int id, String title, String text) {
+        if(id < 0) id = ++notification_id;
         NotificationCompat.Builder notifyBuilder = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle(title)
                 .setContentText(text)
