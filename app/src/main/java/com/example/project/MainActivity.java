@@ -20,6 +20,8 @@ import android.widget.Button;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;
+import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 import android.widget.LinearLayout;
 import android.location.Location;
@@ -64,7 +66,7 @@ class EventConst {
     public static final int IS_EVENT = 1;
 }
 
-public class MainActivity extends AppCompatActivity implements TMapGpsManager.onLocationChangedCallback, TMapView.OnClickListenerCallback {
+public class MainActivity extends AppCompatActivity implements TMapGpsManager.onLocationChangedCallback {
 
     private static final int MULTIPLE_PERMISSION = 10235;
     private final String[] PERMISSIONS = {
@@ -80,6 +82,7 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
     private TMapView tmapview = null;
     private TMapGpsManager tmapgps = null;
 
+    private ProgressBar progressBar = null;
 
     private ArrayList<EventPoint> eventPoint = new ArrayList<>();
     private ArrayList<EventPoint> alertPoint = new ArrayList<>();
@@ -93,8 +96,6 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
 
     private int walk_id = 0;
 
-    private boolean is_pointed = false;
-
     private boolean show_event = true;
     private boolean show_alert = true;
     TreeSet<Integer> showing = new TreeSet<>();
@@ -103,37 +104,34 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
     private Button login_button = null;
     private String login_id = null;
 
-    /*
-    Markerlist - 클릭된 마커들
-    Poilist - 클릭된 POI 들
-    Point - 화면좌표값을 위도, 경도로 반환한 값
-    Pointf - 화면좌표값
-     */
-    @Override
-    public boolean onPressEvent(ArrayList<TMapMarkerItem> markerlist, ArrayList<TMapPOIItem> poilist, TMapPoint point, PointF pointf) {
-        if(markerlist.size() > 0) {
-            // TMapMarkerItem item = markerlist.get(0);
-            // Toast.makeText(getApplicationContext(), "마커 클릭", Toast.LENGTH_LONG).show();
-            return false;
-        }
-        
-        // Toast.makeText(getApplicationContext(), "위도 : " + point.getLatitude() + "\n경도 : " + point.getLongitude(), Toast.LENGTH_LONG).show();
-        return false;
-    }
+    ImageView report_center_icon = null;
+    private boolean is_pointed = false;
 
-    @Override
-    public boolean onPressUpEvent(ArrayList<TMapMarkerItem> arrayList, ArrayList<TMapPOIItem> arrayList1, TMapPoint tMapPoint, PointF pointF) {
-        return false;
-    }
 
     @Override
     public void onLocationChange(Location location) {
-        // int Satellite = tmapgps.getSatellite(); 위성 수
+        // int Satellite = tmapgps.getSatellite();
         // TODO : location = 보정(location);
         tmapview.setLocationPoint(location.getLongitude(), location.getLatitude());
         // 이동시 위도 경도 출력
-        Toast.makeText(getApplicationContext(), "위도 : " + location.getLatitude() + "\n경도 : " + location.getLongitude(), Toast.LENGTH_LONG).show();
+        // Toast.makeText(getApplicationContext(), "위도 : " + location.getLatitude() + "\n경도 : " + location.getLongitude(), Toast.LENGTH_LONG).show();
         lastLocation = location;
+
+        if(tmapgps.getProvider() == "network") {
+            tmapgps.setProvider(tmapgps.GPS_PROVIDER);
+            
+            new android.os.Handler().postDelayed(
+                    () -> progressBar.setVisibility(View.GONE),
+                    2500);
+
+            for(EventPoint point : showPoint) {
+                double dist = distance(location.getLatitude(), location.getLongitude(), point.getLatitude(), point.getLongitude());
+                if(dist < 1) showing.add(point.getId());
+            }
+
+            LinearLayout linearLayoutTmap = findViewById(R.id.mapview);
+            linearLayoutTmap.addView(tmapview);
+        }
 
         if(is_walking) {
             tmapPolyLine.addLinePoint(new TMapPoint(location.getLatitude(), location.getLongitude()));
@@ -142,13 +140,13 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
 
         
         for(EventPoint point : showPoint) {
-            double distance = Math.sqrt(Math.pow(point.getLatitude() - location.getLatitude(), 2) + Math.pow(point.getLongitude() - location.getLongitude(), 2));
-            if(distance < 0.001) {
+            double dist = distance(location.getLatitude(), location.getLongitude(), point.getLatitude(), point.getLongitude()); // KM
+
+            if(dist < 1) { // 1KM이내에 들어오면 알림 전송
                 if(!showing.contains(point.getId())) {
                     sendNotification(point.getId(), "이벤트 발생", point.getId() + "번 이벤트 발생");
-                    showing.add(point.getId());
                 }
-            } else if(showing.contains(point.getId())) {
+            } else if(dist > 1.5 && showing.contains(point.getId())) { // 1.5km 이상 떨어진 다음, 1KM 이내에 다시 들어와야 알림 전송
                 showing.remove(point.getId());
             }
         }
@@ -165,38 +163,26 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
             ActivityCompat.requestPermissions(this, PERMISSIONS, MULTIPLE_PERMISSION);
         }
 
-        LinearLayout linearLayoutTmap = findViewById(R.id.mapview);
-
         tmapview = new TMapView(this);
         tmapview.setSKTMapApiKey("KRtlS815a12Oxhqfy9gkF7OHp10LDPsu1Nk4nC6d");
-        linearLayoutTmap.addView(tmapview);
 
         tmapview.setLanguage(TMapView.LANGUAGE_KOREAN);
-        tmapview.setZoomLevel(15);
+        tmapview.setZoomLevel(17);
         tmapview.setMapType(TMapView.MAPTYPE_STANDARD);
-        tmapview.setTrackingMode(true);
 
         tmapview.setIconVisibility(true);
-
-//        tmapgps.setMinDistance((float)0.001);
 
         tmapgps = new TMapGpsManager(MainActivity.this);
         tmapgps.setMinTime(1000);
         tmapgps.setMinDistance(5);
-        tmapgps.setProvider(TMapGpsManager.GPS_PROVIDER);
+        tmapgps.setProvider(tmapgps.NETWORK_PROVIDER);
 
         tmapPolyLine.setLineColor(Color.YELLOW);
         tmapPolyLine.setLineWidth(20);
         tmapPolyLine.setOutLineAlpha(0);
 
         tmapgps.OpenGps();
-
-        // 시작점을 찾아 화면에 보여준다.
-        TMapPoint startPoint = tmapgps.getLocation();
-        onLocationChange(new Location ("startPoint") {{
-            setLatitude(startPoint.getLatitude());
-            setLongitude(startPoint.getLongitude());
-        }});
+        tmapview.setTrackingMode(true);
 
         // TODO : walk_id = get_walk_id();
 
@@ -212,7 +198,7 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
         // 산책을 시작하는 버튼과 종료하는 버튼
         start_walk_button = (Button) findViewById(R.id.start_walk_button);
         end_walk_button = (Button) findViewById(R.id.end_walk_button);
-        end_walk_button.setVisibility(View.GONE);
+        end_walk_button.setVisibility(View.VISIBLE);
 
         start_walk_button.setOnClickListener(v -> start_walk());
 
@@ -223,6 +209,7 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
         return_button.setOnClickListener(v -> {
             tmapview.setCenterPoint(lastLocation.getLongitude(), lastLocation.getLatitude());
             tmapview.setTrackingMode(true);
+            if(tmapview.getZoomLevel() < 17) tmapview.setZoomLevel(17);
         });
 
         // 디버깅용 화면 중앙으로 이동하는 버튼
@@ -249,11 +236,27 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
         });
 
         Button report_button = (Button) findViewById(R.id.report_button);
-        report_button.setOnClickListener(v -> {
-            if(is_pointed) {
+        report_center_icon = (ImageView) findViewById(R.id.report_center_icon);
+        report_center_icon.bringToFront();
+        report_center_icon.setVisibility(View.INVISIBLE);
 
+        report_button.setOnClickListener(v -> {
+            if(login_id == null) {
+                Toast.makeText(getApplicationContext(), "로그인이 필요합니다.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            if(is_pointed) {
+                TMapPoint point = tmapview.getCenterPoint();
+                Intent intent = new Intent(this, ReportActivity.class);
+                intent.putExtra("latitude", point.getLatitude());
+                intent.putExtra("longitude", point.getLongitude());
+                startActivity(intent);
+
+                onBackPressed();
             } else {
-                report(lastLocation);
+                is_pointed = true;
+                report_center_icon.setVisibility(View.VISIBLE);
             }
         });
 
@@ -279,8 +282,12 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
             
         });
 
-//        System.out.println(tmapgps.getProvider());
         createNotificationChannel();
+
+
+        progressBar = (ProgressBar) findViewById(R.id.progressBar);
+        progressBar.setVisibility(View.VISIBLE);
+        progressBar.bringToFront();
     }
 
     @Override
@@ -344,8 +351,8 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
     @Override
     public void onBackPressed() {
         if(is_pointed) {
-
             is_pointed = false;
+            report_center_icon.setVisibility(View.INVISIBLE);
             return;
         }
 
@@ -373,6 +380,11 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
 
     // 산책이 시작되었을 때 실행되는 함수
     public void start_walk() {
+        if(login_id == null) {
+            Toast.makeText(getApplicationContext(), "로그인이 필요합니다.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         walk_id = walk_id + 1;
         tmapPolyLine = new TMapPolyLine();
         is_walking = true;
@@ -413,7 +425,12 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
         }
     }
 
-    public void report(Location location) {
-        // TODO : POPUP 하나 더
+    private static double distance(double lat1, double lon1, double lat2, double lon2) {
+        double theta = lon1 - lon2;
+        double dist = Math.sin(Math.toRadians(lat1)) * Math.sin(Math.toRadians(lat2)) + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) * Math.cos(Math.toRadians(theta));
+        dist = Math.acos(dist);
+        dist = Math.toDegrees(dist);
+        dist = dist * 60 * 1.1515 * 1.609344;
+        return (dist);
     }
 }

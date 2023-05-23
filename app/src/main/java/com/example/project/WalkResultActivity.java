@@ -11,7 +11,7 @@ import android.content.DialogInterface;
 
 
 public class WalkResultActivity extends Activity {
-    
+
     @Override
     public void onBackPressed() {
         finish();
@@ -30,9 +30,9 @@ public class WalkResultActivity extends Activity {
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.walk_result);
-        
+
         Button return_home_button = (Button) findViewById(R.id.return_home_button);
         return_home_button.setOnClickListener(v -> onBackPressed());
-        
+
     }
 }
