@@ -93,7 +93,7 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
 
     private int walk_id = 0;
 
-    private static int notification_id = 0;
+    private static int notification_id = 100000;
     private boolean is_pointed = false;
 
     private boolean show_event = true;
@@ -146,7 +146,7 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
             double distance = Math.sqrt(Math.pow(point.getLatitude() - location.getLatitude(), 2) + Math.pow(point.getLongitude() - location.getLongitude(), 2));
             if(distance < 0.001) {
                 if(!showing.contains(point.getId())) {
-                    sendNotification(++notification_id, "이벤트 발생", point.getId() + "번 이벤트 발생");
+                    sendNotification(point.getId(), "이벤트 발생", point.getId() + "번 이벤트 발생");
                     showing.add(point.getId());
                 }
             } else if(showing.contains(point.getId())) {
