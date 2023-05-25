@@ -60,6 +60,7 @@ public class LoginActivity extends Activity {
                 
                 Intent intent = new Intent();
                 intent.putExtra("id", login_id);
+                intent.putExtra("password", login_password);
                 setResult(RESULT_OK, intent);
 
                 finish();

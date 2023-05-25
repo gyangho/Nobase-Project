@@ -11,8 +11,15 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.PointF;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.Rect;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
@@ -145,6 +152,7 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
             if(dist < 1) { // 1KM이내에 들어오면 알림 전송
                 if(!showing.contains(point.getId())) {
                     sendNotification(point.getId(), "이벤트 발생", point.getId() + "번 이벤트 발생");
+                    showing.add(point.getId());
                 }
             } else if(dist > 1.5 && showing.contains(point.getId())) { // 1.5km 이상 떨어진 다음, 1KM 이내에 다시 들어와야 알림 전송
                 showing.remove(point.getId());
@@ -198,7 +206,7 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
         // 산책을 시작하는 버튼과 종료하는 버튼
         start_walk_button = (Button) findViewById(R.id.start_walk_button);
         end_walk_button = (Button) findViewById(R.id.end_walk_button);
-        end_walk_button.setVisibility(View.VISIBLE);
+        end_walk_button.setVisibility(View.INVISIBLE);
 
         start_walk_button.setOnClickListener(v -> start_walk());
 
@@ -262,8 +270,7 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
 
         login_button = (Button) findViewById(R.id.login_button);
         if(sharedPreferences.getBoolean("auto_login", false)) {
-            login_id = sharedPreferences.getString("id", "");
-            login_button.setText("로그아웃");
+            login(sharedPreferences.getString("id", ""), sharedPreferences.getString("password", ""));
         }
 
         login_button.setOnClickListener(v -> {
@@ -271,13 +278,7 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
                 Intent intent = new Intent(this, LoginActivity.class);
                 startActivityForResult(intent, 1);
             } else {
-                SharedPreferences.Editor editor = sharedPreferences.edit();
-                editor.putBoolean("auto_login", false);
-                editor.commit();
-
-                login_id = null;
-                login_button.setText("로그인");
-                Toast.makeText(getApplicationContext(), "로그아웃 되었습니다.", Toast.LENGTH_SHORT).show();
+                logout();
             }
             
         });
@@ -288,17 +289,16 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
         progressBar = (ProgressBar) findViewById(R.id.progressBar);
         progressBar.setVisibility(View.VISIBLE);
         progressBar.bringToFront();
+
+        Bitmap profile = BitmapFactory.decodeResource(getResources(), R.drawable.default_profile);
+        change_profile(profile);
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == 1) {
-            login_id = data.getStringExtra("id");
-            if(login_id == null) return;
-            login_button.setText("로그아웃");
-
-            Toast.makeText(getApplicationContext(), login_id + "님 로그인 되었습니다.", Toast.LENGTH_SHORT).show();
+            login(data.getStringExtra("id"), data.getStringExtra("password"));
         }
     }
 
@@ -432,5 +432,61 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
         dist = Math.toDegrees(dist);
         dist = dist * 60 * 1.1515 * 1.609344;
         return (dist);
+    }
+
+    private void login(String id, String password) {
+        if(id == null) {
+            Toast.makeText(getApplicationContext(), "로그인에 실패했습니다.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        // TODO : 아이디 비밀번호 확인
+
+        login_id = id;
+
+        login_button.setText("로그아웃");
+        Toast.makeText(getApplicationContext(), login_id + "님 로그인 되었습니다.", Toast.LENGTH_SHORT).show();
+
+        // TODO : id 프로필 사진 불러오기
+        // if(프로필 사진이 있다면) change_profile(profile);
+    }
+
+    private void logout() {
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putBoolean("auto_login", false);
+        editor.commit();
+
+        login_id = null;
+        login_button.setText("로그인");
+        Toast.makeText(getApplicationContext(), "로그아웃 되었습니다.", Toast.LENGTH_SHORT).show();
+
+        Bitmap profile = BitmapFactory.decodeResource(getResources(), R.drawable.default_profile);
+        change_profile(profile);
+    }
+
+    private void change_profile(Bitmap profile) {
+        // profile의 크기를 100*100으로 바꿈
+        profile = Bitmap.createScaledBitmap(profile, 100, 100, true);
+        profile = getCroppedBitmap(profile);
+        tmapview.setIcon(profile);
+    }
+
+    private Bitmap getCroppedBitmap(Bitmap bitmap) {
+        Bitmap output = Bitmap.createBitmap(bitmap.getWidth(),
+                bitmap.getHeight(), Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(output);
+
+        final int color = 0xff424242;
+        final Paint paint = new Paint();
+        final Rect rect = new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight());
+
+        paint.setAntiAlias(true);
+        canvas.drawARGB(0, 0, 0, 0);
+        paint.setColor(color);
+        canvas.drawCircle(bitmap.getWidth() / 2, bitmap.getHeight() / 2,
+                bitmap.getWidth() / 2, paint);
+        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
+        canvas.drawBitmap(bitmap, rect, rect, paint);
+
+        return output;
     }
 }

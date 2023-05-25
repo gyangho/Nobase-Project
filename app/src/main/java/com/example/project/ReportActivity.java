@@ -10,6 +10,8 @@ import android.widget.Button;
 import android.view.View;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.widget.CheckBox;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
@@ -32,8 +34,6 @@ public class ReportActivity extends Activity {
     }
 
     private TMapView tmapview = null;
-    public void onLocationChange(Location location) {
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,7 +47,7 @@ public class ReportActivity extends Activity {
 
         tmapview = new TMapView(this);
         tmapview.setSKTMapApiKey("FODY58g1Tw9QWg3wjnRto7hFmCfJGYAz64vst7vP");
-        // Toast.makeText(getApplicationContext(), "위도: " + latitude + ", 경도: " + longitude, Toast.LENGTH_LONG).show();
+        
         tmapview.setZoomLevel(18);
         tmapview.setLanguage(TMapView.LANGUAGE_KOREAN);
         tmapview.setMapType(TMapView.MAPTYPE_STANDARD);
@@ -58,12 +58,28 @@ public class ReportActivity extends Activity {
         tmarker.setVisible(TMapMarkerItem.VISIBLE);
         tmapview.addMarkerItem("report_point", tmarker);
 
-        Button return_home_button = (Button) findViewById(R.id.cancel_button);
-        return_home_button.setOnClickListener(v -> onBackPressed());
+        Button cancel_button = (Button) findViewById(R.id.cancel_button);
+        cancel_button.setOnClickListener(v -> onBackPressed());
 
         tmapview.setLocationPoint(longitude, latitude);
         tmapview.setCenterPoint(longitude, latitude);
         LinearLayout linearLayoutTmap = findViewById(R.id.mapview);
         linearLayoutTmap.addView(tmapview);
+
+        Button report_button = (Button) findViewById(R.id.report_button);
+        report_button.setOnClickListener(v -> {
+            EditText et_title = (EditText) findViewById(R.id.et_title);
+            if (et_title.getText().toString().equals("")) {
+                Toast.makeText(getApplicationContext(), "제목을 입력해주세요.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            EditText et_subtitle = (EditText) findViewById(R.id.et_subtitle);
+            CheckBox is_alert = (CheckBox) findViewById(R.id.is_alert);
+            // TODO : 신고 내용 저장하기
+
+            Toast.makeText(getApplicationContext(), "제보가 완료되었습니다.", Toast.LENGTH_SHORT).show();
+            finish();
+        });
     }
 }
