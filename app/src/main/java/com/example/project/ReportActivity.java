@@ -2,6 +2,8 @@ package com.example.project;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.location.Location;
 import android.os.Bundle;
 import android.view.MotionEvent;
@@ -55,6 +57,9 @@ public class ReportActivity extends Activity {
 
         TMapMarkerItem tmarker = new TMapMarkerItem();
         tmarker.setTMapPoint(new TMapPoint(latitude, longitude));
+        Bitmap bitmap = BitmapFactory.decodeResource(this.getResources(),R.drawable.location_icon);
+        tmarker.setIcon(bitmap);
+        //tmarker.setPosition(0.5F, 1.0F);  //마커의 중심점을 하단, 중앙으로 설정
         tmarker.setVisible(TMapMarkerItem.VISIBLE);
         tmapview.addMarkerItem("report_point", tmarker);
 

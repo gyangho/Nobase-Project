@@ -3,7 +3,6 @@ package com.example.project;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
-import androidx.core.content.ContextCompat;
 
 import android.Manifest;
 import android.app.Activity;
@@ -16,17 +15,16 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.PointF;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
-import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
@@ -38,7 +36,6 @@ import com.skt.Tmap.TMapView;
 import com.skt.Tmap.TMapPoint;
 import com.skt.Tmap.TMapPolyLine;
 import com.skt.Tmap.TMapMarkerItem;
-import com.skt.Tmap.poi_item.TMapPOIItem;
 
 import java.util.ArrayList;
 import java.util.TreeSet;
@@ -97,7 +94,8 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
 
     private Location lastLocation = null;
 
-    private Button end_walk_button = null, start_walk_button = null;
+    //private Button end_walk_button = null, start_walk_button = null;
+    private ImageButton start_walk_button = null, end_walk_button = null;
     private boolean is_walking = false;
     private TMapPolyLine tmapPolyLine = new TMapPolyLine();
 
@@ -204,8 +202,8 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
         togglePoint();
 
         // 산책을 시작하는 버튼과 종료하는 버튼
-        start_walk_button = (Button) findViewById(R.id.start_walk_button);
-        end_walk_button = (Button) findViewById(R.id.end_walk_button);
+        start_walk_button = (ImageButton) findViewById(R.id.start_walk_button);
+        end_walk_button = (ImageButton) findViewById(R.id.end_walk_button);
         end_walk_button.setVisibility(View.INVISIBLE);
 
         start_walk_button.setOnClickListener(v -> start_walk());
@@ -213,7 +211,7 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
         end_walk_button.setOnClickListener(v -> onBackPressed());
 
         // 화면 중앙을 현재 위치로 이동시키는 버튼
-        Button return_button = (Button) findViewById(R.id.return_button);
+        ImageButton return_button = (ImageButton) findViewById(R.id.return_button);
         return_button.setOnClickListener(v -> {
             tmapview.setCenterPoint(lastLocation.getLongitude(), lastLocation.getLatitude());
             tmapview.setTrackingMode(true);
@@ -417,6 +415,9 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
         for(EventPoint point : showPoint) {
             TMapMarkerItem tmarker = new TMapMarkerItem();
             tmarker.setTMapPoint(new TMapPoint(point.getLatitude(), point.getLongitude()));
+            Bitmap bitmap = BitmapFactory.decodeResource(this.getResources(),R.drawable.location_icon);
+            tmarker.setIcon(bitmap);
+            //tmarker.setPosition(0.5F, 1.0F);  //마커의 중심점을 하단, 중앙으로 설정
             tmarker.setVisible(TMapMarkerItem.VISIBLE);
             tmarker.setCanShowCallout(true);
             tmarker.setCalloutTitle(point.getTitle());
