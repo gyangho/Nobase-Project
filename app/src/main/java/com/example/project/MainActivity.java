@@ -31,6 +31,7 @@ import android.widget.Toast;
 import android.widget.LinearLayout;
 import android.location.Location;
 
+import com.google.gson.annotations.SerializedName;
 import com.skt.Tmap.TMapGpsManager;
 import com.skt.Tmap.TMapView;
 import com.skt.Tmap.TMapPoint;
@@ -39,6 +40,17 @@ import com.skt.Tmap.TMapMarkerItem;
 
 import java.util.ArrayList;
 import java.util.TreeSet;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
+import retrofit2.http.Body;
+import retrofit2.http.GET;
+import retrofit2.http.POST;
+import retrofit2.http.PUT;
+import retrofit2.http.Path;
 
 class EventPoint {
     private double latitude;
@@ -288,8 +300,16 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
         progressBar.setVisibility(View.VISIBLE);
         progressBar.bringToFront();
 
-        Bitmap profile = BitmapFactory.decodeResource(getResources(), R.drawable.default_profile);
-        change_profile(profile);
+        if(login_id == null)
+        {
+            Bitmap profile = BitmapFactory.decodeResource(getResources(), R.drawable.default_profile);
+            change_profile(profile);
+        }
+        else
+        {
+            Bitmap profile = BitmapFactory.decodeResource(getResources(), R.drawable.login_profile);
+            change_profile(profile);
+        }
     }
 
     @Override
@@ -434,6 +454,84 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
         dist = dist * 60 * 1.1515 * 1.609344;
         return (dist);
     }
+    public class JsonTest {
+
+        @SerializedName("userid")
+        private String userid = "1";
+
+        @SerializedName("num1")
+        private int num1 = 1;
+
+        @SerializedName("num2")
+        private int num2 = 1;
+
+        @SerializedName("longitude")
+        private float longitude = 1.0F;
+
+        @SerializedName("latitude")
+        private float latitude = 1.0F;
+
+        @SerializedName("satellite")
+        private int satellite = 3;
+        @Override
+        public String toString() {
+            return "JsonTest{" +
+                    "userid=" + userid +
+                    ", num1=" + num1 +
+                    ", num2='" + num2 +
+                    ", longitude='" + longitude +
+                    ", latitude='" + latitude +
+                    ", satellite='" + satellite +
+                    '}';
+        }
+    }
+
+    public interface RetrofitService {
+
+        // @GET( EndPoint-자원위치(URI) )
+        @POST("gps/{post}")
+        Call<JsonTest> getPosts(@Path("post") String post, @Body JsonTest jsonTest);
+    }
+
+    // Retrofit 객체 생성 및 설정
+    Retrofit retrofit = new Retrofit.Builder()
+            .baseUrl("http://192.168.81.179:3000/")
+            .addConverterFactory(GsonConverterFactory.create())
+            .build();
+
+    // RetrofitService 인터페이스 구현체 생성
+    RetrofitService service = retrofit.create(RetrofitService.class);
+
+    // JsonTest 객체 생성
+    JsonTest jsonTest = new JsonTest();
+
+// JsonTest 객체에 값을 설정
+
+// ...
+
+    // POST 요청 보내기
+    Call<JsonTest> call = service.getPosts("post", jsonTest);
+    call.enqueue(new Callback<JsonTest>() {
+            @Override
+            public void onResponse(Call<JsonTest> call, Response<JsonTest> response) {
+                // 응답 처리
+                if (response.isSuccessful()) {
+                    // 성공적인 응답 처리
+                    JsonTest result = response.body();
+                    // ...
+                } else {
+                    // 응답이 실패한 경우
+                    // ...
+                }
+            }
+
+            @Override
+            public void onFailure(Call<JsonTest> call, Throwable t) {
+                // 실패 처리
+                // ...
+            }
+        });
+
 
     private void login(String id, String password) {
         if(id == null) {
@@ -449,6 +547,8 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
 
         // TODO : id 프로필 사진 불러오기
         // if(프로필 사진이 있다면) change_profile(profile);
+        Bitmap profile = BitmapFactory.decodeResource(getResources(), R.drawable.login_profile);
+        change_profile(profile);
     }
 
     private void logout() {
