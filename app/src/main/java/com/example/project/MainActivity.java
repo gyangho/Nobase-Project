@@ -1,5 +1,7 @@
 package com.example.project;
 
+import static android.content.ContentValues.TAG;
+
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
@@ -19,6 +21,7 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.app.AlertDialog;
@@ -124,6 +127,7 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
     ImageView report_center_icon = null;
     private boolean is_pointed = false;
 
+    ArrayList<Location> locationList;
 
     @Override
     public void onLocationChange(Location location) {
@@ -133,6 +137,7 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
         // 이동시 위도 경도 출력
         // Toast.makeText(getApplicationContext(), "위도 : " + location.getLatitude() + "\n경도 : " + location.getLongitude(), Toast.LENGTH_LONG).show();
         lastLocation = location;
+        //locationList.add(location);
 
         if(tmapgps.getProvider() == "network") {
             tmapgps.setProvider(tmapgps.GPS_PROVIDER);
@@ -206,7 +211,7 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
 
         // TODO : Event Point 가져오기
         for(EventPoint point : new EventPoint[]{new EventPoint(37.4963, 126.9569, 0, "이벤트 1", "이벤트 1 설명입니다.", 1), new EventPoint(37.4946, 126.9571, 1, "이벤트 2", "이벤트 2 설명입니다.", 2)}) {
-            if(point.checkType(EventConst.IS_EVENT)) eventPoint.add(point);
+            if (point.checkType(EventConst.IS_EVENT)) eventPoint.add(point);
             else alertPoint.add(point);
         }
 
@@ -239,6 +244,42 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
                 setLongitude(tpoint.getLongitude());
             }});
             tmapview.setCenterPoint(tpoint.getLongitude(), tpoint.getLatitude());
+
+            // Retrofit 객체 생성 및 설정
+            Retrofit retrofit = new Retrofit.Builder()
+                    .baseUrl("http://192.168.81.179:3000/gps/")
+                    .addConverterFactory(GsonConverterFactory.create())
+                    .build();
+            // RetrofitService 인터페이스 구현체 생성
+            RetrofitService service = retrofit.create(RetrofitService.class);
+
+            // JsonTest 객체 생성
+            JsonTest jsonTest = new JsonTest();
+
+            // JsonTest 객체에 값을 설정
+            jsonTest.setJson("1", 1, 1, 3.1F, 2.5F, 3);
+
+            // POST 요청 보내기
+            Call<JsonTest> call = service.getPosts("post", jsonTest);
+            call.enqueue(new Callback<JsonTest>() {
+                @Override
+                public void onResponse(Call<JsonTest> call, Response<JsonTest> response) {
+                    // 응답 처리
+                    if (response.isSuccessful()) {
+                        Log.d(TAG, "onResponse: 성공");
+                        JsonTest result = response.body();
+                        // ...
+                    } else {
+                        // 응답이 실패한 경우
+                        Log.d(TAG, "onResponse: 실패");
+                    }
+                }
+                @Override
+                public void onFailure(Call<JsonTest> call, Throwable t) {
+                    Log.d(TAG, "onFailure: 실패");
+                    // ...
+                }
+            });
         });
 
         Button alert_view_button = (Button) findViewById(R.id.alert_view_button);
@@ -457,22 +498,22 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
     public class JsonTest {
 
         @SerializedName("userid")
-        private String userid = "1";
+        private String userid;
 
         @SerializedName("num1")
-        private int num1 = 1;
+        private int num1;
 
         @SerializedName("num2")
-        private int num2 = 1;
+        private int num2;
 
         @SerializedName("longitude")
-        private float longitude = 1.0F;
+        private float longitude;
 
         @SerializedName("latitude")
-        private float latitude = 1.0F;
+        private float latitude;
 
         @SerializedName("satellite")
-        private int satellite = 3;
+        private int satellite;
         @Override
         public String toString() {
             return "JsonTest{" +
@@ -484,54 +525,24 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
                     ", satellite='" + satellite +
                     '}';
         }
+
+        public void setJson(String userid, int num1, int num2, float longitude, float latitude, int satellite)
+        {
+            this.userid = userid;
+            this.num1 = num1;
+            this.num2 = num2;
+            this.longitude = longitude;
+            this.latitude = latitude;
+            this.satellite = satellite;
+        }
     }
 
     public interface RetrofitService {
 
         // @GET( EndPoint-자원위치(URI) )
-        @POST("gps/{post}")
+        @POST("/{post}")
         Call<JsonTest> getPosts(@Path("post") String post, @Body JsonTest jsonTest);
     }
-
-    // Retrofit 객체 생성 및 설정
-    Retrofit retrofit = new Retrofit.Builder()
-            .baseUrl("http://192.168.81.179:3000/")
-            .addConverterFactory(GsonConverterFactory.create())
-            .build();
-
-    // RetrofitService 인터페이스 구현체 생성
-    RetrofitService service = retrofit.create(RetrofitService.class);
-
-    // JsonTest 객체 생성
-    JsonTest jsonTest = new JsonTest();
-
-// JsonTest 객체에 값을 설정
-
-// ...
-
-    // POST 요청 보내기
-    Call<JsonTest> call = service.getPosts("post", jsonTest);
-    call.enqueue(new Callback<JsonTest>() {
-            @Override
-            public void onResponse(Call<JsonTest> call, Response<JsonTest> response) {
-                // 응답 처리
-                if (response.isSuccessful()) {
-                    // 성공적인 응답 처리
-                    JsonTest result = response.body();
-                    // ...
-                } else {
-                    // 응답이 실패한 경우
-                    // ...
-                }
-            }
-
-            @Override
-            public void onFailure(Call<JsonTest> call, Throwable t) {
-                // 실패 처리
-                // ...
-            }
-        });
-
 
     private void login(String id, String password) {
         if(id == null) {
