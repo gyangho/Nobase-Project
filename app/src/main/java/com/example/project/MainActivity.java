@@ -303,6 +303,20 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
             }
         });
 
+
+        walkSpinner = (Spinner) findViewById(R.id.walkSpinner);
+
+        walkSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                show_walk(position);
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
+        });
+
         login_button = (Button) findViewById(R.id.login_button);
         if(sharedPreferences.getBoolean("auto_login", false)) {
             login(sharedPreferences.getString("id", ""), sharedPreferences.getString("password", ""));
@@ -332,21 +346,6 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
         chronometer = (Chronometer) findViewById(R.id.chronometer);
         dist_text.setVisibility(View.GONE);
         chronometer.setVisibility(View.GONE);
-
-        walkSpinner = (Spinner) findViewById(R.id.walkSpinner);
-        
-        walkSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                show_walk(position);
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-            }
-        });
-
-        getWalkList();
     }
 
 
@@ -530,7 +529,7 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
         
         startActivity(intent);
 
-        // TODO : 서버에 날짜, 시간, 경로 전송하기
+        // TODO : 서버에 id, 날짜, 시간, 경로 전송하기
         Date date = new Date();
         String datetime = format.format(date);
 
@@ -589,8 +588,10 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
         // TODO : 아이디 비밀번호 확인
 
         login_id = id;
+        getWalkList();
 
         login_button.setText("로그아웃");
+
         Toast.makeText(getApplicationContext(), login_id + "님 로그인 되었습니다.", Toast.LENGTH_SHORT).show();
 
         // TODO : id 프로필 사진 불러오기
@@ -605,6 +606,9 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
         login_id = null;
         login_button.setText("로그인");
         Toast.makeText(getApplicationContext(), "로그아웃 되었습니다.", Toast.LENGTH_SHORT).show();
+
+        walkList.clear();
+        toggleWalkSpinner();
 
         Bitmap profile = BitmapFactory.decodeResource(getResources(), R.drawable.default_profile);
         change_profile(profile);
@@ -640,7 +644,7 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
     private void getWalkList() {
         walkList.add(new Walk(-1, "이전 기록 표시안함", 0, new double[]{0}, new double[]{0}));
 
-        // TODO : 서버에서 산책 리스트 받아와서 walkList에 추가하기
+        // TODO : 서버에서 login_id의 산책 리스트 받아와서 walkList에 추가하기
         // TODO : walk_id = get_walk_id();
 
 
