@@ -22,6 +22,8 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.SystemClock;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
@@ -30,6 +32,7 @@ import android.widget.Chronometer;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.LinearLayout;
@@ -41,7 +44,10 @@ import com.skt.Tmap.TMapPoint;
 import com.skt.Tmap.TMapPolyLine;
 import com.skt.Tmap.TMapMarkerItem;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.TreeSet;
 
 class EventPoint {
@@ -70,11 +76,34 @@ class EventPoint {
     public boolean checkType(int check) { return (check & type) > 0; }
 }
 
+class Walk {
+    private int id;
+    private String datetime;
+    private int time;
+    private double[] latitudes;
+    private double[] longitudes;
+
+    public Walk(int id, String datetime, int time, double[] latitudes, double[] longitudes) {
+        this.id = id;
+        this.datetime = datetime;
+        this.time = time;
+        this.latitudes = latitudes;
+        this.longitudes = longitudes;
+    }
+
+    public int getId() { return id; }
+    public String getDatetime() { return datetime; }
+    public int getTime() { return time; }
+    public double[] getLatitudes() { return latitudes; }
+    public double[] getLongitudes() { return longitudes; }
+}
+
 class EventConst {
     public static final int IS_EVENT = 1;
 }
 
 public class MainActivity extends AppCompatActivity implements TMapGpsManager.onLocationChangedCallback {
+    private final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     private static final int MULTIPLE_PERMISSION = 10235;
     private final String[] PERMISSIONS = {
@@ -121,6 +150,9 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
     private ArrayList<Location> locations = new ArrayList<>();
     private double walk_distance = 0;
     private ArrayList<Location> reportLocations = new ArrayList<>();
+
+    private ArrayList<Walk> walkList = new ArrayList<>();
+    private Spinner walkSpinner = null;
 
     @Override
     public void onLocationChange(Location location) {
@@ -199,8 +231,6 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
 
         tmapgps.OpenGps();
         tmapview.setTrackingMode(true);
-
-        // TODO : walk_id = get_walk_id();
 
         // TODO : Event Point 가져오기
         for(EventPoint point : new EventPoint[]{new EventPoint(37.4963, 126.9569, 0, "이벤트 1", "이벤트 1 설명입니다.", 1), new EventPoint(37.4946, 126.9571, 1, "이벤트 2", "이벤트 2 설명입니다.", 2)}) {
@@ -302,6 +332,21 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
         chronometer = (Chronometer) findViewById(R.id.chronometer);
         dist_text.setVisibility(View.GONE);
         chronometer.setVisibility(View.GONE);
+
+        walkSpinner = (Spinner) findViewById(R.id.walkSpinner);
+        
+        walkSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                show_walk(position);
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
+        });
+
+        getWalkList();
     }
 
 
@@ -413,7 +458,7 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
             return;
         }
         
-        finish();    
+        finish();
     }
 
     // 산책이 시작되었을 때 실행되는 함수
@@ -474,17 +519,32 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
             reportLongitude[i] = reportLocations.get(i).getLongitude();
         }
 
-        // TODO : 서버에 날짜, 시간, 경로 전송하기
+        String walk_time = chronometer.getText().toString().substring(3);
 
         intent.putExtra("locationLatitude", locationLatitude);
         intent.putExtra("locationLongitude", locationLongitude);
         intent.putExtra("reportLatitude", reportLatitude);
         intent.putExtra("reportLongitude", reportLongitude);
         intent.putExtra("walk_distance", walk_distance);
-        intent.putExtra("walk_time", chronometer.getText().toString().substring(3));
-        
+        intent.putExtra("walk_time", walk_time);
         
         startActivity(intent);
+
+        // TODO : 서버에 날짜, 시간, 경로 전송하기
+        Date date = new Date();
+        String datetime = format.format(date);
+
+        String[] time = walk_time.split(":");
+        int walk_time_seconds = 0;
+        if(time.length == 2) {
+            walk_time_seconds = Integer.parseInt(time[0]) * 60 + Integer.parseInt(time[1]);
+        }
+        else {
+            walk_time_seconds = Integer.parseInt(time[0]);
+        }
+
+        walkList.add(new Walk(++walk_id, datetime, walk_time_seconds, locationLatitude, locationLongitude));
+        toggleWalkSpinner();
     }
 
     public void togglePoint() {
@@ -575,5 +635,60 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
         canvas.drawBitmap(bitmap, rect, rect, paint);
 
         return output;
+    }
+
+    private void getWalkList() {
+        walkList.add(new Walk(-1, "이전 기록 표시안함", 0, new double[]{0}, new double[]{0}));
+
+        // TODO : 서버에서 산책 리스트 받아와서 walkList에 추가하기
+        // TODO : walk_id = get_walk_id();
+
+
+        // 임시용
+        String datetime = "2020-11-01 12:00:00";
+        Date date = null;
+        try {
+            date = format.parse(datetime);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+
+        double[] lat = {37.4963, 37.4946};
+        double[] lon = {126.9569, 126.9571};    
+
+        walkList.add(new Walk(++walk_id, datetime, 99, lat, lon));
+        toggleWalkSpinner();
+    }
+
+    private void toggleWalkSpinner() {
+        ArrayList<String> walkDate = new ArrayList<String>();
+        for(int i=0;i<walkList.size();i++) {
+            walkDate.add(walkList.get(i).getDatetime());
+        }
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, walkDate);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        walkSpinner.setAdapter(adapter);
+        walkSpinner.setSelection(0);
+    }
+
+    private TMapPolyLine showingTmapPolyLine = null;
+
+    public void show_walk(int id) {
+        if(id < 0) return;
+
+        tmapview.removeTMapPolyLine("showing");
+        
+        showingTmapPolyLine = new TMapPolyLine();
+        showingTmapPolyLine.setLineWidth(30);
+        showingTmapPolyLine.setLineColor(Color.YELLOW);
+        showingTmapPolyLine.setOutLineColor(Color.YELLOW);
+        showingTmapPolyLine.setLineAlpha(50);
+        showingTmapPolyLine.setOutLineAlpha(50);
+
+        for(int i=0;i<walkList.get(id).getLatitudes().length;i++) {
+            showingTmapPolyLine.addLinePoint(new TMapPoint(walkList.get(id).getLatitudes()[i], walkList.get(id).getLongitudes()[i]));
+        }
+
+        tmapview.addTMapPolyLine("showing", showingTmapPolyLine);
     }
 }
