@@ -50,10 +50,9 @@ import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 import retrofit2.http.Body;
+import retrofit2.http.DELETE;
 import retrofit2.http.GET;
 import retrofit2.http.POST;
-import retrofit2.http.PUT;
-import retrofit2.http.Path;
 
 class EventPoint {
     private double latitude;
@@ -247,7 +246,7 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
 
             // Retrofit 객체 생성 및 설정
             Retrofit retrofit = new Retrofit.Builder()
-                    .baseUrl("http://192.168.81.179:3000/gps/")
+                    .baseUrl("http://192.168.81.179:3000/")
                     .addConverterFactory(GsonConverterFactory.create())
                     .build();
             // RetrofitService 인터페이스 구현체 생성
@@ -260,7 +259,7 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
             jsonTest.setJson("1", 1, 1, 3.1F, 2.5F, 3);
 
             // POST 요청 보내기
-            Call<JsonTest> call = service.getPosts("post", jsonTest);
+            Call<JsonTest> call = service.sendPosts(jsonTest);
             call.enqueue(new Callback<JsonTest>() {
                 @Override
                 public void onResponse(Call<JsonTest> call, Response<JsonTest> response) {
@@ -271,12 +270,14 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
                         // ...
                     } else {
                         // 응답이 실패한 경우
-                        Log.d(TAG, "onResponse: 실패");
+                        Log.e(TAG, "onResponse: 실패 - " + response.message());
                     }
                 }
+
                 @Override
                 public void onFailure(Call<JsonTest> call, Throwable t) {
-                    Log.d(TAG, "onFailure: 실패");
+                    //Log.d(TAG, "onFailure: 실패");
+                    Log.e(TAG, "에러 : " + t.getMessage());
                     // ...
                 }
             });
@@ -496,7 +497,6 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
         return (dist);
     }
     public class JsonTest {
-
         @SerializedName("userid")
         private String userid;
 
@@ -537,11 +537,16 @@ public class MainActivity extends AppCompatActivity implements TMapGpsManager.on
         }
     }
 
-    public interface RetrofitService {
-
+    public interface RetrofitService
+    {
         // @GET( EndPoint-자원위치(URI) )
-        @POST("/{post}")
-        Call<JsonTest> getPosts(@Path("post") String post, @Body JsonTest jsonTest);
+        @POST("gps")
+        Call<JsonTest> sendPosts(@Body JsonTest jsonTest);
+        @GET("gps")
+        Call<JsonTest> getPosts();
+
+        @DELETE("gps")
+        Call<JsonTest> deletePosts();
     }
 
     private void login(String id, String password) {
