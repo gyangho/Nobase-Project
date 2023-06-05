@@ -70,9 +70,12 @@ public class ReportActivity extends Activity {
         LinearLayout linearLayoutTmap = findViewById(R.id.mapview);
         linearLayoutTmap.addView(tmapview);
 
+        EditText et_title = (EditText) findViewById(R.id.et_title);
+        EditText et_subtitle = (EditText) findViewById(R.id.et_subtitle);
+        CheckBox is_alert = (CheckBox) findViewById(R.id.is_alert);
+
         Button report_button = (Button) findViewById(R.id.report_button);
         report_button.setOnClickListener(v -> {
-            EditText et_title = (EditText) findViewById(R.id.et_title);
             if (et_title.getText().toString().equals("")) {
                 Toast.makeText(getApplicationContext(), "제목을 입력해주세요.", Toast.LENGTH_SHORT).show();
                 return;
@@ -100,6 +103,13 @@ public class ReportActivity extends Activity {
             // TODO : 신고 내용 저장하기
 
             Toast.makeText(getApplicationContext(), "제보가 완료되었습니다.", Toast.LENGTH_SHORT).show();
+            Intent rintent = new Intent();
+            rintent.putExtra("latitude", latitude);
+            rintent.putExtra("longitude", longitude);
+            rintent.putExtra("title", et_title.getText().toString());
+            rintent.putExtra("subtitle", et_subtitle.getText().toString());
+            rintent.putExtra("is_alert", is_alert.isChecked());
+            setResult(RESULT_OK, rintent);
             finish();
         });
     }

@@ -16,7 +16,28 @@
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.0"/>
+        app:layout_constraintVertical_bias="0.0">
+    </LinearLayout>
+
+    <Chronometer
+        android:id="@+id/chronometer"
+        android:layout_width="200dp"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:textSize="30dp"
+        android:format="시간 %s"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"/>
+
+    <TextView
+        android:id="@+id/dist_text"
+        android:layout_width="200dp"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:textSize="30dp"
+        android:text="거리 00.00km"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
     <ImageButton
         android:id="@+id/start_walk_button"
@@ -105,9 +126,9 @@
 
     <ImageView
         android:id="@+id/report_center_icon"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="47dp"
+        android:layout_marginBottom="0dp"
         app:srcCompat="@drawable/location_icon"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -123,5 +144,16 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+
+    <Spinner
+        android:id="@+id/walkSpinner"
+        android:background="@color/white"
+        android:paddingTop="4dp"
+        android:paddingBottom="4dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="100dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
