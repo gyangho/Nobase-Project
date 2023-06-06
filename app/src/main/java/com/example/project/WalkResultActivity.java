@@ -64,7 +64,7 @@ public class WalkResultActivity extends Activity {
         double walk_distance = getIntent().getDoubleExtra("walk_distance", 0);
         String walk_time = getIntent().getStringExtra("walk_time");
         
-        double hour = Double.parseDouble(walk_time.substring(0, 2)) + Double.parseDouble(walk_time.substring(3, 5)) / 60;
+        double hour = (Double.parseDouble(walk_time.substring(0, 2)) + Double.parseDouble(walk_time.substring(3, 5)) / 60) / 60;
         double walk_speed = walk_distance / hour;
 
         // 산책 경로를 지도에 표시
