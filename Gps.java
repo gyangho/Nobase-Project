@@ -91,16 +91,17 @@ public class Gps
     public double get_distance(Gps g1, Gps g2)
     {
 
-        double lat1 = g1.nowLatitude;
+        double lat1 = g1.nowLatitude; 
         double lat2 = g2.nowLatitude;
         double lon1 = g1.nowLongitude;
         double lon2 = g2.nowLongitude;
-        double dLat = Math.toRadians(lat2 - lat1);
-        double dLon = Math.toRadians(lon2 - lon1);
+        double dLat = Math.toRadians(lat2 - lat1); //위도 변화량
+        double dLon = Math.toRadians(lon2 - lon1); //경도 변화량
 
-        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(Math.toRadians(lat1))
+         * Math.cos(Math.toRadians(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        double d = EARTH_RADIUS * c * 1000;    // Distance in m
+        double d = EARTH_RADIUS * c * 1000;    // Haversine formula를 이용한 거리계산
         return d;
     }
 
@@ -110,27 +111,27 @@ public class Gps
         double lat1 = glist.get(1).nowLatitude;
         double lon1 = glist.get(1).nowLongitude;
 
-        v[0] = Math.cos(Math.toRadians(lon1));
-        v[1] = Math.sin(Math.toRadians(lat1));
-        v[2] = Math.sin(Math.toRadians(lon1));
+        v[0] = Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lon1)); // x좌표
+        v[1] = Math.sin(Math.toRadians(lat1)); // y좌표
+        v[2] = Math.cos(Math.toRadians(lat1)) * Math.sin(Math.toRadians(lon1)); // z좌표
 
         return v;
     }
 
     public double[] get_vector() //이전과 그 전의 데이터의 방향
     {
-        double lat1 = glist.get(0).nowLatitude;
-        double lat2 = glist.get(1).nowLatitude;
-        double lon1 = glist.get(0).nowLongitude;
-        double lon2 = glist.get(1).nowLongitude;
+        double lat1 = glist.get(0).nowLatitude; //이이전의 위도
+        double lat2 = glist.get(1).nowLatitude; //이전의 위도
+        double lon1 = glist.get(0).nowLongitude;//이이전의 경도
+        double lon2 = glist.get(1).nowLongitude;//이전의 경도
 
-        double x1 = Math.cos(Math.toRadians(lon1));
+        double x1 = Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lon1));
         double y1 = Math.sin(Math.toRadians(lat1));
-        double z1 = Math.sin(Math.toRadians(lon1));
+        double z1 = Math.cos(Math.toRadians(lat1)) * Math.sin(Math.toRadians(lon1));
 
-        double x2 = Math.cos(Math.toRadians(lon2));
+        double x2 = Math.cos(Math.toRadians(lat2)) * Math.cos(Math.toRadians(lon2));
         double y2 = Math.sin(Math.toRadians(lat2));
-        double z2 = Math.sin(Math.toRadians(lon2));
+        double z2 = Math.cos(Math.toRadians(lat2)) * Math.sin(Math.toRadians(lon2));
 
         double[] v = new double[3];
         v[0] = x2 - x1;
@@ -148,27 +149,27 @@ public class Gps
             return this; //현재 이용자의 2번째 데이터 까지는 현재 위치 그대로 반환.
         }
         Gps resgps;
-        double[] v = get_vector();
+        double[] v = get_vector(); //이전 위치들의 방향벡터 구하기
         double[] resv;
-        double k = available_Distance() / Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+        double k = available_Distance(); //평균 이동거리 
         double x = k * v[0];
         double y = k * v[1];
-        double z = k * v[2];
+        double z = k * v[2];  //방향벡터에 길이 곱해서 같은 방향으로의 길이 N짜리 벡터 구하기
         double lat;
         double lon;
 
-        resv = get_past_coordinate();
+        resv = get_past_coordinate(); //이전 좌표
         resv[0] += x;
         resv[1] += y;
-        resv[2] += z;
+        resv[2] += z;  //이전 벡터에 이동 예측 벡터 더하기
 
-        lat = Math.toDegrees(Math.acos(x));
-        lon = Math.toDegrees(Math.asin(y));
+        lat = Math.toDegrees(Math.asin(y));
+        lon = Math.toDegrees(Math.atan(z/x)); //예측한 벡터의 위도 경도 구하기
 
         resgps = new Gps(-1, lat, lon, null, -1);
 
         return resgps;
-    }
+	}
 
     public Queue<Gps> aroundGpsList(List<Gps> AroundGps, int num)
     {
