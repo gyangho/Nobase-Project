@@ -71,8 +71,8 @@ public class ReportActivity extends Activity {
         linearLayoutTmap.addView(tmapview);
 
         EditText et_title = (EditText) findViewById(R.id.et_title);
-        EditText et_subtitle = (EditText) findViewById(R.id.et_subtitle);
-        CheckBox is_alert = (CheckBox) findViewById(R.id.is_alert);
+        AtomicReference<EditText> et_subtitle = new AtomicReference<>((EditText) findViewById(R.id.et_subtitle));
+        AtomicReference<CheckBox> is_alert = new AtomicReference<>((CheckBox) findViewById(R.id.is_alert));
 
         Button report_button = (Button) findViewById(R.id.report_button);
         report_button.setOnClickListener(v -> {
@@ -81,9 +81,9 @@ public class ReportActivity extends Activity {
                 return;
             }
 
-            EditText et_subtitle = (EditText) findViewById(R.id.et_subtitle);
-            CheckBox is_alert = (CheckBox) findViewById(R.id.is_alert);
-            is_alert.setOnClickListener(new View.OnClickListener() {
+            et_subtitle.set((EditText) findViewById(R.id.et_subtitle));
+            is_alert.set((CheckBox) findViewById(R.id.is_alert));
+            is_alert.get().setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     if(((CheckBox)v).isChecked())
@@ -107,8 +107,8 @@ public class ReportActivity extends Activity {
             rintent.putExtra("latitude", latitude);
             rintent.putExtra("longitude", longitude);
             rintent.putExtra("title", et_title.getText().toString());
-            rintent.putExtra("subtitle", et_subtitle.getText().toString());
-            rintent.putExtra("is_alert", is_alert.isChecked());
+            rintent.putExtra("subtitle", et_subtitle.get().getText().toString());
+            rintent.putExtra("is_alert", is_alert.get().isChecked());
             setResult(RESULT_OK, rintent);
             finish();
         });
